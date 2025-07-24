@@ -1,86 +1,156 @@
-# V2bX
+# V2bX SSPanel 对接版本
 
-[![](https://img.shields.io/badge/TgChat-UnOfficialV2Board%E4%BA%A4%E6%B5%81%E7%BE%A4-green)](https://t.me/unofficialV2board)
-[![](https://img.shields.io/badge/TgChat-YuzukiProjects%E4%BA%A4%E6%B5%81%E7%BE%A4-blue)](https://t.me/YuzukiProjects)
+这是专门为 SSPanel-UIM 面板定制的 V2bX 版本，支持完整的 VLESS Reality 节点对接。
 
-A V2board node server based on multi core, modified from XrayR.  
-一个基于多种内核的V2board节点服务端，修改自XrayR，支持V2ay,Trojan,Shadowsocks协议。
+## 🚀 特性
 
-**注意： 本项目需要搭配[修改版V2board](https://github.com/wyx2685/v2board)**
+- ✅ **完全兼容 SSPanel-UIM** - 无需修改面板代码
+- ✅ **VLESS Reality 支持** - 完整支持 Reality 协议
+- ✅ **多内核支持** - 支持 Xray、Sing-box、Hysteria2
+- ✅ **自动配置解析** - 自动解析 SSPanel 的 server 字段格式
+- ✅ **一键脚本友好** - 无需额外配置面板类型
 
-## 特点
+## 📋 支持的节点类型
 
-* 永久开源且免费。
-* 支持Vmess/Vless, Trojan， Shadowsocks, Hysteria1/2多种协议。
-* 支持Vless和XTLS等新特性。
-* 支持单实例对接多节点，无需重复启动。
-* 支持限制在线IP。
-* 支持限制Tcp连接数。
-* 支持节点端口级别、用户级别限速。
-* 配置简单明了。
-* 修改配置自动重启实例。
-* 支持多种内核，易扩展。
-* 支持条件编译，可仅编译需要的内核。
+| 节点类型 | Sort值 | 内核支持 | 状态 |
+|---------|--------|----------|------|
+| VLESS | 15 | Xray, Sing | ✅ |
+| VLESS Reality | 16 | Xray, Sing | ✅ |
+| Trojan | 14 | Xray, Sing | ✅ |
+| VMess | 11,12 | Xray, Sing | ✅ |
+| Shadowsocks | 0,10 | Xray, Sing | ✅ |
 
-## 功能介绍
+## 🔧 配置说明
 
-| 功能        | v2ray | trojan | shadowsocks | hysteria1/2 |
-|-----------|-------|--------|-------------|----------|
-| 自动申请tls证书 | √     | √      | √           | √        |
-| 自动续签tls证书 | √     | √      | √           | √        |
-| 在线人数统计    | √     | √      | √           | √        |
-| 审计规则      | √     | √      | √           | √         |
-| 自定义DNS    | √     | √      | √           | √        |
-| 在线IP数限制   | √     | √      | √           | √        |
-| 连接数限制     | √     | √      | √           | √         |
-| 跨节点IP数限制  |√      |√       |√            |√          |
-| 按照用户限速    | √     | √      | √           | √         |
-| 动态限速(未测试) | √     | √      | √           | √         |
+### 基础配置 (单节点)
 
-## TODO
+```json
+{
+  "Log": {
+    "Level": "info",
+    "Output": ""
+  },
+  "Cores": [
+    {
+      "Type": "xray",
+      "Log": {
+        "Level": "info",
+        "Timestamp": true
+      }
+    }
+  ],
+  "Nodes": [
+    {
+      "Core": "xray",
+      "ApiConfig": {
+        "ApiHost": "https://your-panel.com",
+        "ApiKey": "your-mukey-here",
+        "NodeID": 1,
+        "NodeType": "vless",
+        "Timeout": 30
+      },
+      "Options": {
+        "ListenIP": "0.0.0.0",
+        "SendIP": "0.0.0.0",
+        "EnableProxyProtocol": false,
+        "EnableTFO": true,
+        "DNSType": "ipv4_only",
+        "LimitConfig": {
+          "EnableRealtime": true,
+          "SpeedLimit": 0,
+          "IPLimit": 0,
+          "ConnLimit": 0
+        },
+        "CertConfig": {
+          "CertMode": "none"
+        }
+      }
+    }
+  ]
+}
+```
 
-- [ ] 重新实现动态限速
-- [ ] 重新实现在线IP同步（跨节点在线IP限制）
-- [ ] 完善使用文档
+### 多内核配置
 
-## 软件安装
+参考 `config_sspanel_multicore.json` 文件，支持同时运行多个内核和多个节点。
 
-### 一键安装
+## 🛠️ 安装使用
+
+### 1. 编译
+
+```bash
+cd V2bX
+go build -o V2bX main.go
+```
+
+### 2. 配置
+
+修改配置文件中的以下参数：
+- `ApiHost`: 你的面板地址
+- `ApiKey`: 面板的 muKey (在 .env 文件中)
+- `NodeID`: 节点ID
+- `NodeType`: 节点类型 (vless/trojan/vmess/shadowsocks)
+
+### 3. 运行
+
+```bash
+./V2bX -config config_sspanel.json
+```
+
+## 📡 API 对接
+
+V2bX 会自动调用以下 SSPanel API：
+
+- `GET /mod_mu/nodes/{id}/info?key={mukey}` - 获取节点配置
+- `GET /mod_mu/users?key={mukey}&node_id={id}` - 获取用户列表
+- `POST /mod_mu/users/traffic?key={mukey}&node_id={id}` - 上报流量数据
+- `POST /mod_mu/users/aliveip?key={mukey}&node_id={id}` - 上报在线用户
+
+## 🔐 VLESS Reality 配置
+
+在面板中创建 VLESS Reality 节点时，server 字段格式：
 
 ```
-wget -N https://raw.githubusercontent.com/wyx2685/V2bX-script/master/install.sh && bash install.sh
+example.com;port=443&flow=xtls-rprx-vision&security=reality&dest=www.microsoft.com:443&serverName=www.microsoft.com&privateKey=xxx&shortId=xxx
 ```
 
-### 手动安装
+V2bX 会自动解析这些参数并生成正确的配置。
 
-[手动安装教程](https://v2bx.v-50.me/v2bx/v2bx-xia-zai-he-an-zhuang/install/manual)
+## 🐛 故障排除
 
-## 构建
-``` bash
-# 通过-tags选项指定要编译的内核， 可选 xray， sing, hysteria2
-go build -v -o ./V2bX -tags "xray sing hysteria2 with_quic with_grpc with_utls with_wireguard with_acme" -trimpath -ldflags "-s -w -buildid="
-```
+### 1. 连接失败
+- 检查 ApiHost 和 ApiKey 是否正确
+- 确认面板的 muKey 设置正确
+- 检查防火墙设置
 
-## 配置文件及详细使用教程
+### 2. 节点配置错误
+- 确认节点的 sort 值正确
+- 检查 server 字段格式是否符合要求
+- 查看 V2bX 日志获取详细错误信息
 
-[详细使用教程](https://v2bx.v-50.me/)
+### 3. 用户无法连接
+- 检查节点状态是否正常
+- 确认用户有权限使用该节点
+- 检查证书配置是否正确
 
-## 免责声明
+## 📝 日志
 
-* 此项目用于本人自用，因此本人不能保证向后兼容性。
-* 由于本人能力有限，不能保证所有功能的可用性，如果出现问题请在Issues反馈。
-* 本人不对任何人使用本项目造成的任何后果承担责任。
-* 本人比较多变，因此本项目可能会随想法或思路的变动随性更改项目结构或大规模重构代码，若不能接受请勿使用。
+V2bX 会输出详细的日志信息，包括：
+- 节点配置获取状态
+- 用户列表同步状态
+- 流量上报状态
+- 错误信息和调试信息
 
-## Thanks
+建议在测试时将日志级别设置为 `debug` 以获取更多信息。
 
-* [Project X](https://github.com/XTLS/)
-* [V2Fly](https://github.com/v2fly)
-* [VNet-V2ray](https://github.com/ProxyPanel/VNet-V2ray)
-* [Air-Universe](https://github.com/crossfw/Air-Universe)
-* [XrayR](https://github.com/XrayR/XrayR)
-* [sing-box](https://github.com/SagerNet/sing-box)
+## 🤝 支持
 
-## Stars 增长记录
+如果遇到问题，请检查：
+1. V2bX 日志输出
+2. 面板后台日志
+3. 网络连接状态
+4. 配置文件格式
 
-[![Stargazers over time](https://starchart.cc/wyx2685/V2bX.svg)](https://starchart.cc/wyx2685/V2bX)
+---
+
+**注意**: 这个版本专门为 SSPanel-UIM 优化，不再支持 V2Board 面板。如需 V2Board 支持，请使用原版 V2bX。
