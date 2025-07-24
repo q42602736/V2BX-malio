@@ -1,0 +1,78 @@
+{
+  "Log": {
+    "Level": "info",
+    "Output": ""
+  },
+  "Cores": [
+    {
+      "Type": "xray",
+      "Log": {
+        "Level": "info",
+        "Timestamp": true
+      }
+    },
+    {
+      "Type": "sing",
+      "Log": {
+        "Level": "info",
+        "Timestamp": true
+      },
+      "NTP": {
+        "Enable": true,
+        "Server": "time.apple.com",
+        "ServerPort": 0
+      }
+    }
+  ],
+  "Nodes": [
+    {
+      "Core": "xray",
+      "ApiConfig": {
+        "ApiHost": "https://v2board.afeicloud.de",
+        "ApiKey": "your-mukey-here",
+        "NodeID": 1,
+        "NodeType": "vless",
+        "Timeout": 30
+      },
+      "Options": {
+        "ListenIP": "0.0.0.0",
+        "SendIP": "0.0.0.0",
+        "EnableProxyProtocol": false,
+        "EnableTFO": true,
+        "DNSType": "ipv4_only",
+        "LimitConfig": {
+          "EnableRealtime": true,
+          "SpeedLimit": 0,
+          "IPLimit": 0,
+          "ConnLimit": 0
+        },
+        "CertConfig": {
+          "CertMode": "none"
+        }
+      }
+    },
+    {
+      "Core": "sing",
+      "ApiConfig": {
+        "ApiHost": "https://v2board.afeicloud.de",
+        "ApiKey": "your-mukey-here",
+        "NodeID": 2,
+        "NodeType": "trojan",
+        "Timeout": 30
+      },
+      "Options": {
+        "ListenIP": "0.0.0.0",
+        "SendIP": "0.0.0.0",
+        "EnableProxyProtocol": false,
+        "EnableDNS": true,
+        "DomainStrategy": "ipv4_only",
+        "LimitConfig": {
+          "EnableRealtime": true,
+          "SpeedLimit": 0,
+          "IPLimit": 0,
+          "ConnLimit": 0
+        }
+      }
+    }
+  ]
+}
