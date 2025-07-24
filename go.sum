@@ -1124,8 +1124,8 @@ github.com/xeipuuv/gojsonschema v1.2.0/go.mod h1:anYRn/JVcOK2ZgGU+IjEV4nwlhoK5sQ
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xtls/reality v0.0.0-20250608132114-50752aec6bfb h1:X6ziJCMsFF8Ac/0F3W7+UbFdHZTu+r5nZ/smksHVxNQ=
 github.com/xtls/reality v0.0.0-20250608132114-50752aec6bfb/go.mod h1:yD47RN65bDLZgyHWMfFDiqlzrq4usDMt/Xzsk6tMbhw=
-github.com/xtls/xray-core v1.250516.1-0.20250608135303-fbae89d017ae h1:Be9MicJQI+Iup03zNG7QMEidpbJj3b4//IM8jIAnLKY=
-github.com/xtls/xray-core v1.250516.1-0.20250608135303-fbae89d017ae/go.mod h1:MkfIs2WZ5VLtZHAwDKosSS05Kx5zFFOzvly7Hy6pfPs=
+github.com/xtls/xray-core v1.250608.0 h1:/M0LwzFeFAZf+vdZQhqNYjUXDfPv5hOeYw6jsiAdgWI=
+github.com/xtls/xray-core v1.250608.0/go.mod h1:MkfIs2WZ5VLtZHAwDKosSS05Kx5zFFOzvly7Hy6pfPs=
 github.com/yandex-cloud/go-genproto v0.0.0-20241220122821-aeb3b05efd1c h1:Rnr+lDYXVkP+3eT8/d68iq4G/UeIhyCQk+HKa8toTvg=
 github.com/yandex-cloud/go-genproto v0.0.0-20241220122821-aeb3b05efd1c/go.mod h1:0LDD/IZLIUIV4iPH+YcF+jysO3jkSvADFGm4dCAuwQo=
 github.com/yandex-cloud/go-sdk v0.0.0-20241220131134-2393e243c134 h1:qmpz0Kvr9GAng8LAhRcKIpY71CEAcL3EBkftVlsP5Cw=

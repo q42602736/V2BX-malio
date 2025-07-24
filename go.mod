@@ -22,7 +22,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	github.com/xtls/xray-core v1.250516.1-0.20250608135303-fbae89d017ae
+	github.com/xtls/xray-core v1.250608.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.39.0
 	golang.org/x/sys v0.33.0
