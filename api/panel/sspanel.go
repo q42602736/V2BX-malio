@@ -188,22 +188,17 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 	}
 
 	// Parse server configuration based on sort type
-	logrus.Infof("开始解析服务器配置: %s", sspanelResp.Data.Server)
-	logrus.Infof("节点类型: %d", sspanelResp.Data.Sort)
+	logrus.Debugf("解析服务器配置: sort=%d, server=%s", sspanelResp.Data.Sort, sspanelResp.Data.Server)
 
 	serverParts := strings.Split(sspanelResp.Data.Server, ";")
 	if len(serverParts) == 0 {
-		logrus.Errorf("无效的服务器配置: %s", sspanelResp.Data.Server)
 		return nil, fmt.Errorf("invalid server configuration: %s", sspanelResp.Data.Server)
 	}
 
 	serverHost := serverParts[0]
 	serverParams := make(map[string]string)
 
-	logrus.Infof("服务器地址: %s", serverHost)
-
 	if len(serverParts) > 1 {
-		logrus.Infof("解析服务器参数: %s", serverParts[1])
 		// 支持两种分隔符：& (新格式) 和 | (VMess传统格式)
 		var params []string
 		if strings.Contains(serverParts[1], "&") {
@@ -215,33 +210,23 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 			kv := strings.Split(param, "=")
 			if len(kv) == 2 {
 				serverParams[kv[0]] = kv[1]
-				logrus.Debugf("服务器参数: %s = %s", kv[0], kv[1])
 			}
 		}
-	} else {
-		logrus.Warnf("警告: 服务器配置中没有参数部分，这可能导致配置不完整")
-		logrus.Warnf("期望的格式: host;port=xxx&security=reality&dest=xxx&serverName=xxx&privateKey=xxx&shortId=xxx")
 	}
 
-	logrus.Infof("解析到 %d 个服务器参数", len(serverParams))
+	logrus.Debugf("解析到 %d 个服务器参数", len(serverParams))
 
 	// Create node configuration based on sort type
-	logrus.Infof("开始创建节点配置，节点类型: %d", sspanelResp.Data.Sort)
 	switch sspanelResp.Data.Sort {
 	case 15, 16: // VLESS
-		logrus.Infof("创建VLESS节点配置")
 		node = c.createVlessNode(node, serverHost, serverParams, sspanelResp.Data.Sort)
 	case 17: // Hysteria2
-		logrus.Infof("创建Hysteria2节点配置")
 		node = c.createHy2Node(node, serverHost, serverParams)
 	case 14: // Trojan
-		logrus.Infof("创建Trojan节点配置")
 		node = c.createTrojanNode(node, serverHost, serverParams)
 	case 11, 12: // V2Ray
-		logrus.Infof("创建VMess节点配置")
 		node = c.createVmessNodeFromConfig(node, sspanelResp.Data.Server)
 	default:
-		logrus.Errorf("不支持的节点类型: %d", sspanelResp.Data.Sort)
 		return nil, fmt.Errorf("unsupported node sort: %d", sspanelResp.Data.Sort)
 	}
 
@@ -281,13 +266,10 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 
 // createVlessNode creates VLESS node configuration
 func (c *SSPanelClient) createVlessNode(node *NodeInfo, host string, params map[string]string, sort int) *NodeInfo {
-	logrus.Infof("创建VLESS节点: host=%s, sort=%d", host, sort)
-
 	port, _ := strconv.Atoi(params["port"])
 	if port == 0 {
 		port = 443
 	}
-	logrus.Infof("VLESS节点端口: %d", port)
 
 	vlessNode := &VAllssNode{
 		CommonNode: CommonNode{
@@ -305,74 +287,46 @@ func (c *SSPanelClient) createVlessNode(node *NodeInfo, host string, params map[
 	// Set security type
 	if sort == 16 {
 		if params["security"] != "reality" {
-			logrus.Warnf("警告: 节点类型为16(VLESS Reality)但security参数不是'reality'")
-			logrus.Warnf("当前security参数: '%s'", params["security"])
-			logrus.Warnf("请检查面板中的节点配置是否正确")
+			logrus.Warnf("节点类型为16但security不是reality: '%s'", params["security"])
 		}
 
-		logrus.Infof("配置VLESS Reality安全层")
 		vlessNode.Tls = Reality
 
-		// 详细调试所有参数
-		logrus.Infof("========== Reality 参数调试 ==========")
-		logrus.Infof("所有参数: %+v", params)
-		logrus.Infof("dest参数原始值: '%s'", params["dest"])
-		logrus.Infof("serverName参数原始值: '%s'", params["serverName"])
-		logrus.Infof("privateKey参数原始值: '%s'", params["privateKey"])
-		logrus.Infof("shortId参数原始值: '%s'", params["shortId"])
-		logrus.Infof("fp参数原始值: '%s'", params["fp"])
-		logrus.Infof("flow参数原始值: '%s'", params["flow"])
-		logrus.Infof("=====================================")
-
-		// Set default values for missing parameters
 		serverName := params["serverName"]
 		if serverName == "" {
 			serverName = "www.microsoft.com"
-			logrus.Warnf("serverName参数为空，使用默认值: %s", serverName)
+			logrus.Warnf("serverName为空，使用默认值: %s", serverName)
 		}
-		logrus.Infof("最终使用的serverName: %s", serverName)
 
-		// Parse dest parameter safely
 		dest := params["dest"]
 		if dest == "" {
-			// 如果 dest 为空，使用 serverName 作为默认值
 			dest = serverName
-			logrus.Infof("dest参数为空，自动使用serverName作为dest: %s", dest)
 		}
-		logrus.Infof("最终使用的dest: %s", dest)
 		
-		// 解析 dest，分离域名和端口
 		destParts := strings.Split(dest, ":")
 		destHost := destParts[0]
 		destPort := "443"
 		if len(destParts) > 1 {
 			destPort = destParts[1]
 		}
-		logrus.Infof("解析后的destHost: %s, destPort: %s", destHost, destPort)
 
 		privateKey := params["privateKey"]
 		if privateKey == "" {
-			logrus.Errorf("错误: privateKey参数为空，Reality配置将无法工作")
+			logrus.Errorf("privateKey为空，Reality将无法工作")
 		}
 
 		shortId := params["shortId"]
-		if shortId == "" {
-			logrus.Errorf("错误: shortId参数为空，Reality配置将无法工作")
-		}
 
 		vlessNode.TlsSettings = TlsSettings{
 			ServerName: serverName,
-			Dest:       destHost,  // 只传域名，不包含端口
+			Dest:       destHost,
 			ServerPort: destPort,
 			PrivateKey: privateKey,
 			ShortId:    shortId,
 		}
-		logrus.Infof("Reality最终配置: serverName=%s, dest=%s, destPort=%s", serverName, destHost, destPort)
-		logrus.Debugf("Reality私钥: %s", privateKey)
-		logrus.Debugf("Reality短ID: %s", shortId)
+		logrus.Infof("Reality: serverName=%s, dest=%s, port=%s", serverName, destHost, destPort)
 		node.Security = Reality
 	} else {
-		logrus.Infof("使用普通VLESS配置")
 		vlessNode.Tls = None
 		node.Security = None
 	}

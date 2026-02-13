@@ -15,3 +15,9 @@ example/cert
 output/*
 .idea/*
 newV2bX.sh
+.DS_Store
+build/
+V2bX
+V2bX-linux-*
+*.dat
+*.db
