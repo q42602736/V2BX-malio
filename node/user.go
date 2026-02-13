@@ -134,7 +134,7 @@ func (c *Controller) reportUserTrafficTask() (err error) {
 		"disk_percent":   disk,
 		"uptime_seconds": uptime,
 		"load_string":    fmt.Sprintf("%.2f %.2f %.2f", cpu/100, mem/100, disk/100),
-	}).Info("准备上报节点负载信息")
+	}).Debug("准备上报节点负载信息")
 
 	err = c.apiClient.ReportNodeStatus(nodeStatus)
 	if err != nil {
@@ -153,7 +153,7 @@ func (c *Controller) reportUserTrafficTask() (err error) {
 			"mem_percent":  mem,
 			"disk_percent": disk,
 			"uptime_hours": float64(uptime) / 3600,
-		}).Info("节点负载上报成功")
+		}).Debug("节点负载上报成功")
 	}
 
 	userTraffic = nil

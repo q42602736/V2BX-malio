@@ -125,7 +125,7 @@ func NewSSPanel(c *conf.ApiConfig) (*SSPanelClient, error) {
 // GetNodeInfo gets node configuration from SSPanel
 func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 	path := fmt.Sprintf("/mod_mu/nodes/%d/info", c.NodeId)
-	logrus.Infof("请求节点配置: %s%s", c.APIHost, path)
+	logrus.Debugf("请求节点配置: %s%s", c.APIHost, path)
 
 	r, err := c.client.
 		R().
@@ -139,7 +139,7 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 		return nil, nil
 	}
 
-	logrus.Infof("收到节点配置响应，状态码: %d", r.StatusCode())
+	logrus.Debugf("收到节点配置响应，状态码: %d", r.StatusCode())
 	hash := sha256.Sum256(r.Body())
 	newBodyHash := hex.EncodeToString(hash[:])
 	if c.responseBodyHash == newBodyHash {
@@ -169,7 +169,7 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 		return nil, fmt.Errorf("decode sspanel node response error: %s", err)
 	}
 
-	logrus.Infof("SSPanel节点响应: ret=%d", sspanelResp.Ret)
+	logrus.Debugf("SSPanel节点响应: ret=%d", sspanelResp.Ret)
 	logrus.Debugf("完整节点响应: %+v", sspanelResp)
 
 	if sspanelResp.Ret != 1 {
@@ -313,17 +313,16 @@ func (c *SSPanelClient) createVlessNode(node *NodeInfo, host string, params map[
 		logrus.Infof("配置VLESS Reality安全层")
 		vlessNode.Tls = Reality
 
-		// Parse dest parameter safely
-		dest := params["dest"]
-		if dest == "" {
-			dest = "www.microsoft.com:443"
-			logrus.Warnf("dest参数为空，使用默认值: %s", dest)
-		}
-		destParts := strings.Split(dest, ":")
-		destPort := "443"
-		if len(destParts) > 1 {
-			destPort = destParts[1]
-		}
+		// 详细调试所有参数
+		logrus.Infof("========== Reality 参数调试 ==========")
+		logrus.Infof("所有参数: %+v", params)
+		logrus.Infof("dest参数原始值: '%s'", params["dest"])
+		logrus.Infof("serverName参数原始值: '%s'", params["serverName"])
+		logrus.Infof("privateKey参数原始值: '%s'", params["privateKey"])
+		logrus.Infof("shortId参数原始值: '%s'", params["shortId"])
+		logrus.Infof("fp参数原始值: '%s'", params["fp"])
+		logrus.Infof("flow参数原始值: '%s'", params["flow"])
+		logrus.Infof("=====================================")
 
 		// Set default values for missing parameters
 		serverName := params["serverName"]
@@ -331,6 +330,25 @@ func (c *SSPanelClient) createVlessNode(node *NodeInfo, host string, params map[
 			serverName = "www.microsoft.com"
 			logrus.Warnf("serverName参数为空，使用默认值: %s", serverName)
 		}
+		logrus.Infof("最终使用的serverName: %s", serverName)
+
+		// Parse dest parameter safely
+		dest := params["dest"]
+		if dest == "" {
+			// 如果 dest 为空，使用 serverName 作为默认值
+			dest = serverName
+			logrus.Infof("dest参数为空，自动使用serverName作为dest: %s", dest)
+		}
+		logrus.Infof("最终使用的dest: %s", dest)
+		
+		// 解析 dest，分离域名和端口
+		destParts := strings.Split(dest, ":")
+		destHost := destParts[0]
+		destPort := "443"
+		if len(destParts) > 1 {
+			destPort = destParts[1]
+		}
+		logrus.Infof("解析后的destHost: %s, destPort: %s", destHost, destPort)
 
 		privateKey := params["privateKey"]
 		if privateKey == "" {
@@ -344,12 +362,12 @@ func (c *SSPanelClient) createVlessNode(node *NodeInfo, host string, params map[
 
 		vlessNode.TlsSettings = TlsSettings{
 			ServerName: serverName,
-			Dest:       dest,
+			Dest:       destHost,  // 只传域名，不包含端口
 			ServerPort: destPort,
 			PrivateKey: privateKey,
 			ShortId:    shortId,
 		}
-		logrus.Infof("Reality配置: serverName=%s, dest=%s, destPort=%s", serverName, dest, destPort)
+		logrus.Infof("Reality最终配置: serverName=%s, dest=%s, destPort=%s", serverName, destHost, destPort)
 		logrus.Debugf("Reality私钥: %s", privateKey)
 		logrus.Debugf("Reality短ID: %s", shortId)
 		node.Security = Reality
@@ -868,7 +886,7 @@ func (c *SSPanelClient) ReportNodeStatus(nodeStatus *NodeStatus) error {
 		"cpu_percent":  nodeStatus.CPU,
 		"mem_percent":  nodeStatus.Mem,
 		"disk_percent": nodeStatus.Disk,
-	}).Info("节点负载上报API调用成功")
+	}).Debug("节点负载上报API调用成功")
 
 	return nil
 }
