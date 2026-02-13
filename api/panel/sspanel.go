@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -210,11 +211,13 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 			kv := strings.Split(param, "=")
 			if len(kv) == 2 {
 				serverParams[kv[0]] = kv[1]
+				logrus.Debugf("解析参数: %s = %s", kv[0], kv[1])
 			}
 		}
 	}
 
 	logrus.Debugf("解析到 %d 个服务器参数", len(serverParams))
+	logrus.Debugf("完整参数列表: %+v", serverParams)
 
 	// Create node configuration based on sort type
 	switch sspanelResp.Data.Sort {
@@ -222,6 +225,8 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 		node = c.createVlessNode(node, serverHost, serverParams, sspanelResp.Data.Sort)
 	case 17: // Hysteria2
 		node = c.createHy2Node(node, serverHost, serverParams)
+	case 18: // AnyTLS
+		node = c.createAnyTlsNode(node, serverHost, serverParams)
 	case 14: // Trojan
 		node = c.createTrojanNode(node, serverHost, serverParams)
 	case 11, 12: // V2Ray
@@ -244,6 +249,10 @@ func (c *SSPanelClient) GetNodeInfo() (node *NodeInfo, err error) {
 	case 17: // Hysteria2
 		if node.Hysteria2 != nil {
 			commonNode = &node.Hysteria2.CommonNode
+		}
+	case 18: // AnyTLS
+		if node.AnyTls != nil {
+			commonNode = &node.AnyTls.CommonNode
 		}
 	case 14: // Trojan
 		if node.Trojan != nil {
@@ -843,4 +852,97 @@ func (c *SSPanelClient) ReportNodeStatus(nodeStatus *NodeStatus) error {
 	}).Debug("节点负载上报API调用成功")
 
 	return nil
+}
+
+// createAnyTlsNode creates AnyTLS node configuration
+func (c *SSPanelClient) createAnyTlsNode(node *NodeInfo, host string, params map[string]string) *NodeInfo {
+	logrus.Infof("创建AnyTLS节点: host=%s", host)
+	logrus.Infof("接收到的所有参数: %+v", params)
+
+	port, _ := strconv.Atoi(params["port"])
+	if port == 0 {
+		port = 443
+	}
+	logrus.Infof("AnyTLS节点端口: %d", port)
+
+	anyTlsNode := &AnyTlsNode{
+		CommonNode: CommonNode{
+			Host:       host,
+			ServerPort: port,
+			BaseConfig: &BaseConfig{
+				PushInterval: "60s",
+				PullInterval: "60s",
+			},
+		},
+	}
+
+	// Parse padding_scheme if present
+	if paddingSchemeStr := params["padding_scheme"]; paddingSchemeStr != "" {
+		logrus.Infof("原始padding_scheme字符串(URL编码): '%s'", paddingSchemeStr)
+		
+		// URL decode the padding_scheme string first
+		decodedStr, err := url.QueryUnescape(paddingSchemeStr)
+		if err != nil {
+			logrus.Errorf("URL解码padding_scheme失败: %s", err)
+			decodedStr = paddingSchemeStr // fallback to original
+		}
+		logrus.Infof("URL解码后的padding_scheme: '%s'", decodedStr)
+		
+		// padding_scheme is a JSON array string like: ["stop=8","0=30-30","1=100-400"]
+		var paddingScheme []string
+		if err := json.Unmarshal([]byte(decodedStr), &paddingScheme); err != nil {
+			logrus.Errorf("解析padding_scheme失败: %s", err)
+			logrus.Errorf("尝试解析的字符串: '%s'", decodedStr)
+			// Use default padding scheme if parsing fails
+			paddingScheme = []string{
+				"stop=8",
+				"0=30-30",
+				"1=100-400",
+				"2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000",
+				"3=9-9,500-1000",
+				"4=500-1000",
+				"5=500-1000",
+				"6=500-1000",
+				"7=500-1000",
+			}
+			logrus.Warnf("使用默认padding_scheme")
+		}
+		anyTlsNode.PaddingScheme = paddingScheme
+		logrus.Infof("最终AnyTLS padding_scheme: %v", paddingScheme)
+		logrus.Infof("padding_scheme数组长度: %d", len(paddingScheme))
+		for i, scheme := range paddingScheme {
+			logrus.Infof("  [%d]: %s", i, scheme)
+		}
+	} else {
+		// Use default padding scheme
+		anyTlsNode.PaddingScheme = []string{
+			"stop=8",
+			"0=30-30",
+			"1=100-400",
+			"2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000",
+			"3=9-9,500-1000",
+			"4=500-1000",
+			"5=500-1000",
+			"6=500-1000",
+			"7=500-1000",
+		}
+		logrus.Infof("padding_scheme参数为空，使用默认值: %v", anyTlsNode.PaddingScheme)
+	}
+
+	// Parse server_name (SNI)
+	serverName := params["server_name"]
+	if serverName == "" {
+		serverName = host
+	}
+	anyTlsNode.ServerName = serverName
+	logrus.Infof("AnyTLS server_name: %s", serverName)
+
+	node.AnyTls = anyTlsNode
+	node.Security = Tls // AnyTLS requires TLS
+	
+	logrus.Infof("AnyTLS节点创建完成: host=%s, port=%d, server_name=%s",
+		anyTlsNode.Host, anyTlsNode.ServerPort, anyTlsNode.ServerName)
+	logrus.Infof("最终节点配置: %+v", anyTlsNode)
+	
+	return node
 }

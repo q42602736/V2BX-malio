@@ -21,3 +21,4 @@ V2bX
 V2bX-linux-*
 *.dat
 *.db
+.ace-tool/

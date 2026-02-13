@@ -22,6 +22,8 @@ wget -N https://raw.githubusercontent.com/q42602736/V2BX-malio/main/install.sh &
 | Trojan | 14 | Xray, Sing | ✅ |
 | VMess | 11,12 | Xray, Sing | ✅ |
 | Shadowsocks | 0,10 | Xray, Sing | ✅ |
+| Hysteria2 | 17 | Hysteria2 | ✅ |
+| AnyTLS | 18 | Sing | ✅ |
 
 ## 🔧 配置说明
 
@@ -118,6 +120,21 @@ example.com;port=443&flow=xtls-rprx-vision&security=reality&dest=www.microsoft.c
 ```
 
 V2bX 会自动解析这些参数并生成正确的配置。
+
+## 🔒 AnyTLS 配置
+
+在面板中创建 AnyTLS 节点时，server 字段格式：
+
+```
+example.com;port=443&server_name=example.com&padding_scheme=["0-255","1-5","10-20"]
+```
+
+参数说明：
+- `port`: 监听端口（默认 443）
+- `server_name`: SNI 服务器名称（可选，默认使用 host）
+- `padding_scheme`: 填充方案，JSON 数组格式（可选，默认使用标准方案）
+
+**注意**: AnyTLS 协议仅支持 Sing-box 内核，请在配置文件中使用 `"Core": "sing"`。
 
 ## 🐛 故障排除
 
