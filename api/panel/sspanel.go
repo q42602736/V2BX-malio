@@ -710,11 +710,16 @@ func (c *SSPanelClient) ReportNodeOnlineUsers(data *map[int][]string) error {
 		"formatted_data": aliveData,
 	}).Info("准备上报在线设备数据")
 
+	// Wrap data in PostData structure like XrayR does
+	postData := map[string]interface{}{
+		"data": aliveData,
+	}
+
 	path := "/mod_mu/users/aliveip"
 	r, err := c.client.R().
 		SetQueryParam("key", c.Token).
 		SetQueryParam("node_id", strconv.Itoa(c.NodeId)).
-		SetBody(aliveData).
+		SetBody(postData).
 		ForceContentType("application/json").
 		Post(path)
 
