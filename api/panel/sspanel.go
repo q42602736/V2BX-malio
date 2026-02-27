@@ -677,15 +677,38 @@ func (c *SSPanelClient) ReportUserTraffic(userTraffic []UserTraffic) error {
 
 // ReportNodeOnlineUsers reports online users to SSPanel
 func (c *SSPanelClient) ReportNodeOnlineUsers(data *map[int][]string) error {
+	logrus.WithFields(logrus.Fields{
+		"node_id":    c.NodeId,
+		"data_count": len(*data),
+	}).Debug("开始上报在线设备")
+
 	if data == nil || len(*data) == 0 {
+		logrus.Debug("在线设备数据为空，跳过上报")
 		return nil
 	}
 
-	// Convert to SSPanel format
-	aliveData := make(map[string]interface{})
+	// Convert to SSPanel format: [{"ip": "ip1", "user_id": 1}]
+	aliveData := make([]map[string]interface{}, 0)
 	for uid, ips := range *data {
-		aliveData[strconv.Itoa(uid)] = ips
+		logrus.WithFields(logrus.Fields{
+			"uid":      uid,
+			"ip_count": len(ips),
+			"ips":      ips,
+		}).Debug("处理用户在线IP")
+		
+		for _, ip := range ips {
+			aliveData = append(aliveData, map[string]interface{}{
+				"ip":      ip,
+				"user_id": uid,
+			})
+		}
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"node_id":        c.NodeId,
+		"total_records":  len(aliveData),
+		"formatted_data": aliveData,
+	}).Info("准备上报在线设备数据")
 
 	path := "/mod_mu/users/aliveip"
 	r, err := c.client.R().
@@ -695,10 +718,26 @@ func (c *SSPanelClient) ReportNodeOnlineUsers(data *map[int][]string) error {
 		ForceContentType("application/json").
 		Post(path)
 
+	logrus.WithFields(logrus.Fields{
+		"node_id":     c.NodeId,
+		"status_code": r.StatusCode(),
+		"response":    r.String(),
+		"error":       err,
+	}).Debug("在线设备上报API响应")
+
 	err = c.checkResponse(r, path, err)
 	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"node_id": c.NodeId,
+			"error":   err.Error(),
+		}).Error("在线设备上报失败")
 		return err
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"node_id":       c.NodeId,
+		"total_records": len(aliveData),
+	}).Info("在线设备上报成功")
 
 	return nil
 }
