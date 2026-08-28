@@ -12,7 +12,7 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-acme/lego/v4 v4.21.1-0.20241220151055-ee7a9e4fa04f
 	github.com/go-resty/resty/v2 v2.16.2
-	github.com/goccy/go-json v0.10.4
+	github.com/goccy/go-json v0.10.5
 	github.com/hashicorp/go-multierror v1.1.2-0.20241119060415-613124da9385
 	github.com/juju/ratelimit v1.0.2
 	github.com/sagernet/sing v0.6.11-0.20250521033217-30d675ea099b
